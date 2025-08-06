@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI SQL Generator - Fiber Network</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container { background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); margin: 20px auto; max-width: 1200px; }
+        .header { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border-radius: 20px 20px 0 0; padding: 2rem; text-align: center; }
+        .query-section { background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); margin: 20px; padding: 25px; }
+        .result-section { background: #f8f9fa; border-radius: 15px; border: 1px solid #e9ecef; margin: 20px; padding: 25px; min-height: 200px; }
+        .btn-ai { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 50px; padding: 12px 30px; color: white; font-weight: 600; transition: all 0.3s ease; }
+        .btn-ai:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4); color: white; }
+        .sql-display { background: #2d3748; border-radius: 10px; padding: 20px; margin: 15px 0; color: #e2e8f0; font-family: 'Courier New', monospace; max-height: 300px; overflow-y: auto; }
+        .loading { display: none; text-align: center; color: #667eea; }
+        .loading i { animation: spin 2s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .table-responsive { max-height: 400px; overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6; }
+        .example-queries { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); border-radius: 15px; padding: 20px; margin: 20px; }
+        .example-query { background: white; border-radius: 10px; padding: 15px; margin: 10px 0; cursor: pointer; transition: all 0.3s ease; border: 2px solid transparent; }
+        .example-query:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); }
+        .tabs { border-bottom: 2px solid #e9ecef; margin-bottom: 20px; }
+        .tab { background: none; border: none; padding: 15px 25px; font-weight: 600; color: #6c757d; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s ease; }
+        .tab.active { color: #667eea; border-bottom-color: #667eea; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> AI SQL Generator</h1>
+            <p class="mb-0">Transform natural language into SQL queries for your fiber optic network database</p>
+        </div>
+
+        <!-- ====================================================== -->
+        <!--         THIS IS THE SECTION THAT HAS BEEN FIXED        -->
+        <!-- ====================================================== -->
+        <div class="example-queries">
+            <h5><i class="fas fa-lightbulb"></i> Try these examples for your Fiber Network Schema</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="example-query" onclick="setQuery('Show me all cables with more than 12 fibers')">
+                        <strong>Find Cables:</strong> Show me all cables with more than 12 fibers
+                    </div>
+                    <div class="example-query" onclick="setQuery('Find all network equipment located in building structures')">
+                        <strong>Find Equipment:</strong> Find all network equipment located in building structures
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="example-query" onclick="setQuery('List the names and types of all structures')">
+                        <strong>List Structures:</strong> List the names and types of all structures
+                    </div>
+                    <div class="example-query" onclick="setQuery('Show me all connections that originate from a specific cable ID')">
+                        <strong>Trace Connections:</strong> Show me all connections that originate from a specific cable ID
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Query Input Section -->
+        <div class="query-section">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab(event, 'generate')">
+                    <i class="fas fa-magic"></i> Generate SQL
+                </button>
+                <button class="tab" onclick="switchTab(event, 'execute')">
+                    <i class="fas fa-play"></i> Execute SQL
+                </button>
+                <button class="tab" onclick="switchTab(event, 'explain')">
+                    <i class="fas fa-info-circle"></i> Explain SQL
+                </button>
+            </div>
+
+            <!-- Generate Tab -->
+            <div id="generate-tab" class="tab-content active">
+                <h5><i class="fas fa-comments"></i> Natural Language Query</h5>
+                <div class="mb-3">
+                    <textarea id="naturalQuery" class="form-control" rows="3" placeholder="e.g., Show me all cables with more than 24 fibers that pass through building structures"></textarea>
+                </div>
+                <button onclick="generateSQL()" class="btn btn-ai">
+                    <i class="fas fa-magic"></i> Generate SQL
+                </button>
+            </div>
+
+            <!-- Execute Tab -->
+            <div id="execute-tab" class="tab-content">
+                <h5><i class="fas fa-code"></i> SQL Query</h5>
+                <div class="mb-3">
+                    <textarea id="sqlQuery" class="form-control" rows="5" placeholder="Enter your SQL query here..."></textarea>
+                </div>
+                <button onclick="executeSQL()" class="btn btn-ai">
+                    <i class="fas fa-play"></i> Execute Query
+                </button>
+            </div>
+
+            <!-- Explain Tab -->
+            <div id="explain-tab" class="tab-content">
+                <h5><i class="fas fa-question-circle"></i> SQL to Explain</h5>
+                <div class="mb-3">
+                    <textarea id="explainQuery" class="form-control" rows="5" placeholder="Paste your SQL query here for explanation..."></textarea>
+                </div>
+                <button onclick="explainSQL()" class="btn btn-ai">
+                    <i class="fas fa-info-circle"></i> Explain Query
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading">
+            <i class="fas fa-spinner fa-3x"></i>
+            <p class="mt-3">AI is processing your request...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div class="result-section" id="results">
+            <h5><i class="fas fa-chart-bar"></i> Results</h5>
+            <div id="resultContent">
+                <p class="text-muted text-center">
+                    <i class="fas fa-info-circle"></i>
+                    Enter a natural language query above to get started
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+
+<script>
+    const API_BASE = 'http://localhost:8080/api/sql';
+    const resultContent = document.getElementById('resultContent');
+
+    // --- JAVASCRIPT HAS BEEN FULLY RECTIFIED AND IMPROVED ---
+
+    function switchTab(event, tabName) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        document.getElementById(tabName + '-tab').classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    function setQuery(query) {
+        const generateTabButton = document.querySelector('.tab[onclick*="generate"]');
+        switchTab({ currentTarget: generateTabButton }, 'generate');
+        document.getElementById('naturalQuery').value = query;
+    }
+
+    function showLoading() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+    }
+
+    function hideLoading() {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('results').style.display = 'block';
+    }
+
+    /**
+     * NEW: Centralized function to handle API responses and parse errors correctly.
+     */
+    async function handleApiResponse(response) {
+        const data = await response.json();
+        // The backend now signals errors with HTTP status codes (4xx, 5xx).
+        if (!response.ok) {
+            // Use the detailed error message from our GlobalExceptionHandler.
+            throw new Error(data.message || `Request failed with status ${response.status}`);
+        }
+        return data;
+    }
+
+    function displayError(message) {
+        resultContent.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> <strong>Error:</strong> ${message}</div>`;
+    }
+
+    async function generateSQL() {
+        const query = document.getElementById('naturalQuery').value.trim();
+        if (!query) {
+            displayError('Please enter a natural language query');
+            return;
+        }
+        showLoading();
+        try {
+            const response = await fetch(`${API_BASE}/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query })
+            });
+            const data = await handleApiResponse(response);
+            displayGenerateResult(data);
+        } catch (error) {
+            displayError(error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function displayGenerateResult(data) {
+        const generatedSql = data.generatedSql || '';
+        const executionResult = data.executionResult || {};
+        // Clean the SQL for use in JavaScript function calls
+        const sqlForJs = generatedSql.replace(/'/g, "\\'").replace(/\n/g, ' ');
+
+        let resultHtml = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-comment"></i> Original Query</h6>
+                    <div class="alert alert-info">${data.originalQuery || ''}</div>
+                </div>
+                <div class="col-md-6">
+                    <h6><i class="fas fa-database"></i> Generated SQL</h6>
+                    <div class="sql-display"><pre><code class="language-sql">${generatedSql}</code></pre></div>
+                    <button onclick="copySql(this, '${sqlForJs}');" class="btn btn-outline-primary btn-sm"><i class="fas fa-copy"></i> Copy SQL</button>
+                    <button onclick="executeGeneratedSQL('${sqlForJs}');" class="btn btn-success btn-sm ms-2"><i class="fas fa-play"></i> Execute</button>
+                </div>
+            </div>
+        `;
+
+        // Display execution result or error message if available
+        if (executionResult.success) {
+            resultHtml += `<hr><h6><i class="fas fa-table"></i> Query Results (${executionResult.rowCount} rows)</h6>${formatTableData(executionResult)}`;
+        } else if (executionResult.error) {
+             resultHtml += `<hr><h6><i class="fas fa-exclamation-circle"></i> Execution Error</h6><div class="alert alert-warning">${executionResult.error}</div>`;
+        }
+
+        resultContent.innerHTML = resultHtml;
+        Prism.highlightAll(); // Re-apply syntax highlighting
+    }
+
+    async function executeSQL() {
+        const sql = document.getElementById('sqlQuery').value.trim();
+        if (!sql) {
+            displayError('Please enter a SQL query');
+            return;
+        }
+        showLoading();
+        try {
+            const response = await fetch(`${API_BASE}/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sql: sql })
+            });
+            const data = await handleApiResponse(response);
+            resultContent.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> <strong>Query executed successfully!</strong></div>${formatTableData(data)}`;
+        } catch (error) {
+            displayError(error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    async function explainSQL() {
+        const sql = document.getElementById('explainQuery').value.trim();
+        if (!sql) {
+            displayError('Please enter a SQL query to explain');
+            return;
+        }
+        showLoading();
+        try {
+            const response = await fetch(`${API_BASE}/explain`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sql: sql })
+            });
+            const data = await handleApiResponse(response);
+            resultContent.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle"></i> <strong>Query Explanation</strong></div>
+                <div class="alert alert-light"><i class="fas fa-info-circle"></i> ${data.explanation}</div>
+                <div class="sql-display"><pre><code class="language-sql">${sql}</code></pre></div>`;
+            Prism.highlightAll();
+        } catch (error) {
+            displayError(error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function executeGeneratedSQL(sql) {
+        const executeTabButton = document.querySelector('.tab[onclick*="execute"]');
+        switchTab({ currentTarget: executeTabButton }, 'execute');
+        document.getElementById('sqlQuery').value = sql;
+        executeSQL();
+    }
+
+    function copySql(buttonElement, sql) {
+        navigator.clipboard.writeText(sql).then(() => {
+            const originalText = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            setTimeout(() => { buttonElement.innerHTML = originalText; }, 2000);
+        });
+    }
+
+    function formatTableData(data) {
+        if (!data.data || data.data.length === 0) {
+            return '<p class="text-muted text-center mt-3">Query executed successfully, but returned no data.</p>';
+        }
+        const columns = data.columns || Object.keys(data.data[0]);
+        let html = `<div class="table-responsive"><table class="table table-striped table-hover"><thead><tr class="table-dark">`;
+        columns.forEach(col => { html += `<th>${col}</th>`; });
+        html += `</tr></thead><tbody>`;
+        data.data.forEach(row => {
+            html += '<tr>';
+            columns.forEach(col => {
+                let value = row[col] === null || row[col] === undefined ? '<em class="text-muted">null</em>' : row[col];
+                html += `<td>${value}</td>`;
+            });
+            html += '</tr>';
+        });
+        html += `</tbody></table></div><small class="text-muted">Showing ${data.rowCount} rows</small>`;
+        return html;
+    }
+
+    /**
+     * UPDATED: Health check now checks for the correct property names from the backend
+     * and provides clearer error messages.
+     */
+    window.onload = async function() {
+        try {
+            const response = await fetch(`${API_BASE}/health`);
+            const health = await handleApiResponse(response);
+            if (!health.database_connection) {
+                displayError('Database connection failed. Please check your backend configuration and ensure the database is running.');
+            } else if (!health.ai_service_connection) {
+                displayError('AI service is not available. Please check your Ollama installation and ensure the model is running and accessible.');
+            }
+        } catch (error) {
+             displayError('Cannot connect to the backend service at ' + API_BASE + '. Please ensure the Spring Boot application is running and accessible.');
+        }
+    };
+</script>
+</body>
+</html>
